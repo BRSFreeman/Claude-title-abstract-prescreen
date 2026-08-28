@@ -1,0 +1,4 @@
+# Install with:  pip install -r requirements.txt
+pandas>=1.5
+numpy>=1.23
+openpyxl>=3.1   # required by pandas.read_excel for .xlsx inputs

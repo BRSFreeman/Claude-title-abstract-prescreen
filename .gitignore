@@ -1,0 +1,39 @@
+# ---------------------------------------------------------------------------
+# Review data # ---------------------------------------------------------------------------
+batches/
+temp/
+work/
+outputs/
+
+# Per-round output folders (PICO/, objective/, design/, ...) and the combined
+# CSVs they roll up into.
+*.csv
+*.csv.tmp
+*.xlsx
+*.xlsm
+*.xls
+*.ris
+*.nbib
+
+# The example input IS meant to be committed — it is synthetic.
+!example_input.csv
+
+# ---------------------------------------------------------------------------
+# Claude Code local settings (machine-specific paths, personal permissions)
+# ---------------------------------------------------------------------------
+.claude/settings.local.json
+
+# ---------------------------------------------------------------------------
+# Python / editor cruft
+# ---------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.venv/
+venv/
+env/
+.env
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
