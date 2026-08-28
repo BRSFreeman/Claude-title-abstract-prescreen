@@ -73,9 +73,6 @@ either rename your ID column to `Covidence #` or pass
 `--id-column "Your Column"` to `split_batches.py`, `read_batch.py`,
 `apply_decisions.py`, and `combine.py`.
 
-`example_input.csv` is a synthetic 10-record file for testing your setup. It
-contains no real bibliographic data.
-
 ---
 
 ## Setup
