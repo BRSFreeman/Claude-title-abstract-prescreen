@@ -42,6 +42,7 @@ Do not proceed to Step 2 until every row has been read.
 For every row, read the Title and Abstract together (Covidence # is the unique ID). Screen them for inclusion based on the criteria below. Reason step-by-step and assign exactly one label from the table below. Do not rely on simple keyword matching — consider context, synonyms, and implications. 
 
 ### Criteria
+**note: portions of the screening criteria excerpted from the Cochrane review [Blood transfusion strategies for major bleeding in trauma](https://pubmed.ncbi.nlm.nih.gov/40271704/)**
 
 **Objective:**
 To assess the beneficial and harmful effects of transfusion strategies started within 24 hours of traumatic injury in adults (aged 16 years and over) with major bleeding. 
