@@ -2,24 +2,24 @@
 
 A template for pre-screening titles and abstracts for a systematic review, in advance of dual-reviewer screening. Uses [Claude Code](https://claude.com/claude-code) and Python.
 
-You supply a bibliographic export containing titles and abstracts (e.g. from Covidence), and your inclusion criteria. The pipeline shuffles the records into fixed-size batches, hands each batch to a screening agent, and reassembles the decisions into one CSV with an `include`/`exclude` column per screening round.
+The user provides inclusion criteria into a templated prompt as well as a spreadsheet containing titles and abstracts (e.g. from Covidence). The pipeline splits the records into batches, hands each batch to a screening agent, and reassembles the decisions into one CSV with an `include`/`exclude` column corresponding to the LLMs decisions.
 
 ---
 
-## ⚠️ Read this before you use it
+## Details
 
-**This is a screening aid to reduce the overall burden of title and abstract screening.** It does not fully replace dual independent human screening. Previous testing suggests that about 80% of irrelevant abstracts are removed on average. Humans are still responsible for the other 20%.
+**This is a screening aid to reduce the overall burden of title and abstract screening.** It does not fully replace dual independent human screening. Previous testing suggests that about 80% of irrelevant abstracts are removed on average. The systematic review team is still responsible for the remaining 20%.
 
 - The prompt is deliberately tuned for **high sensitivity**: agents are told to
   include anything ambiguous, and to include records with a missing abstract.
 - You should still audit a handful of excluded abstracts to ensure that you are getting the intended behaviour.
 - **LLM output is not deterministic.** The same abstract can receive different
   labels on different runs.
-- **Report what you did.** If findings from this pipeline appear in a
+- **Reporting** If findings from this pipeline appear in a
   publication, describe the model, the prompt, the date, and the human
   verification you performed. PRISMA and Cochrane guidance on automation tools
   applies.
-- **Check your data-sharing terms.** Some bibliographic databases restrict what
+- **Data-sharing.** Some bibliographic databases restrict what
   you may send to a third-party service, including Claude.
 
 ---
@@ -61,7 +61,7 @@ The input is an `.xlsx`, `.xlsm`, `.xls`, or `.csv` export. Three columns are
 
 | Column | Purpose |
 |---|---|
-| `Covidence #` | Unique record ID. Rename via `--id-column` if yours differs. |
+| `Covidence #` | Unique record ID. |
 | `Title` | Record title. |
 | `Abstract` | Abstract text. May be blank — blanks are included by default. |
 
@@ -97,17 +97,14 @@ contains no real bibliographic data.
 From Claude Code, in the project folder:
 
 ```
-/screen-pipeline-1 example_input.csv
+/screen-pipeline-1 <Input csv file>
 ```
-
-This drives all three stages and reports at the end. Swap in your own file
-once the example works.
 
 ### Manually driven steps
 
 ```bash
-# 1. Split into batches. Note the run tag it prints.
-python scripts/split_batches.py example_input.csv --seed 42
+# 1. Split into batches. Note the run tag it prints. Can optionally add a seed tag e.g. --seed 42 if you want the split to be reproducible
+python scripts/split_batches.py <input-file>
 
 # 2. Screen every batch (from Claude Code, using the tag from step 1)
 #    /screen-batches-wf PICO 20260824_0930
@@ -116,8 +113,7 @@ python scripts/split_batches.py example_input.csv --seed 42
 python scripts/combine.py 20260824_0930 PICO
 ```
 
-Result: `PICO_20260824_0930.csv` — every input row, plus a `PICO_decision`
-column and a `batch` column, sorted with excludes first.
+Result: `PICO_20260824_0930.csv` — every input row, plus a `PICO_decision` column and a `batch` column, sorted with excludes first.
 
 ---
 
@@ -126,7 +122,7 @@ column and a `batch` column, sorted with excludes first.
 ```
 export.xlsx
     |
-    |  split_batches.py  (shuffle, split, stamp a run tag)
+    |  split_batches.py  generates the run tag, splits the records into batches in random order (default 50 per)
     v
 batches/batch_001_TAG.csv ... batch_NNN_TAG.csv
     |
@@ -140,13 +136,10 @@ PICO/PICO_001_TAG.csv ... PICO_NNN_TAG.csv
 PICO_TAG.csv
 ```
 
-**The run tag** (`YYYYMMDD_HHMM`) ties a batch set to its outputs. It is
-printed by the split scripts and passed to every later stage.
+**The run tag** (`YYYYMMDD_HHMM`) ties a batch set to its outputs. It is printed by the split scripts and passed to every later stage.
 
 **Resume safety**
-`apply_decisions.py` refuses to overwrite an existing output. So re-running
-`/screen-batches-wf` with the same tag reprocesses only the batches that are
-missing an output. If a run dies halfway, just run it again.
+In case of interruptions, the orchestration agent can determine which batches still require processing. The `apply_decisions` script also refuses to overwrite existing output, so old decisions should be safe.
 
 **Batches are shuffled** to reduce risk of bias by publication year, database, etc.
 
@@ -154,20 +147,17 @@ missing an output. If a run dies halfway, just run it again.
 
 ## Scripts
 
-All scripts resolve paths relative to the **current working directory** — run
-them from the project root. Every script takes `--help`.
+All scripts resolve paths relative to the **current working directory** — run them from the project root. Every script takes `--help`.
 
 | Script | Purpose |
 |---|---|
 | `scripts/split_batches.py` | Round 1: shuffle a raw export into `batches/batch_NNN_TAG.csv`. |
-| `scripts/split_included.py` | Round 2+: re-batch only the records a previous round included. |
 | `scripts/read_batch.py` | Read a batch, whole or by row range. Used by the screening agent. |
 | `scripts/apply_decisions.py` | Join an agent's decisions onto a batch and write the output. |
 | `scripts/combine.py` | Concatenate all per-batch outputs for one tag. |
 | `scripts/merge_datasets.py` | Outer-join several rounds' outputs on the record ID. |
 
-Useful options: `--batch-size`, `--seed`, `--id-column`, `--out-dir`,
-`--header-row`.
+Useful options: `--batch-size`, `--seed`, `--id-column`, `--out-dir`, `--header-row`.
 
 ---
 
@@ -184,14 +174,9 @@ Other files should not require editing.
 
 ## Data handling
 
-`.gitignore` excludes `batches/`, `temp/`, and all `.csv`/`.xlsx` files by
-default, because **bibliographic exports usually contain publisher-copyrighted
-abstracts** and a part-screened review is unpublished research. Do not remove
-those rules to "just commit the data" — check your database licence first.
+`.gitignore` excludes tabulated data and processing results by default to avoid committing this information to github.
 
-`.claude/settings.local.json` is also excluded: that file holds
-machine-specific paths and personal permission grants and should never be
-shared.
+`.claude/settings.local.json` is also excluded: Once used, that file holds machine-specific paths and personal permission grants and should never be shared.
 
 ---
 
